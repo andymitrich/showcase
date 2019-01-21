@@ -1,0 +1,59 @@
+version: '3'
+services:
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: ./build/php/Dockerfile
+    working_dir: /var/www
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www:rw
+    networks:
+      - laravel-webhooks
+
+  nginx:
+    container_name: nginx
+    build: ./build/nginx
+    working_dir: /var/www
+    restart: unless-stopped
+    ports:
+      - 8080:80
+    volumes:
+      - ./src:/var/www:rw
+      - ./storage/logs:/var/log/nginx
+    networks:
+      - laravel-webhooks
+
+  mysql:
+    container_name: mysql
+    build: ./build/mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./storage/mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: toor
+    networks:
+      - laravel-webhooks
+
+  upsource:
+    container_name: upsource
+    build: ./build/upsource
+    ports:
+      - 8081:8080
+    volumes:
+      - ./storage/upsource/backups:/upsource/backups:rw
+      - ./storage/upsource/data:/upsource/data:rw
+      - ./storage/upsource/logs:/upsource/logs:rw
+      - ./storage/upsource/conf:/upsource/conf:rw
+      - ./storage/upsource/temp:/upsource/temp:rw
+    restart: always
+    networks:
+      - laravel-webhooks
+
+networks:
+  laravel-webhooks:
+    driver: bridge
